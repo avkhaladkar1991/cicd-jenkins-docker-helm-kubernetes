@@ -3,13 +3,15 @@ kind: Service
 metadata:
   name: {{ include "mychart.fullname" . }}
   labels:
-    {{- include "mychart.labels" . | nindent 4 }}
+    app: {{ include "mychart.name" . }}
+    release: {{ .Release.Name }}
 spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: http
+      targetPort: 8080
       protocol: TCP
       name: http
   selector:
-    {{- include "mychart.selectorLabels" . | nindent 4 }}
+    app: {{ include "mychart.name" . }}
+    release: {{ .Release.Name }}
