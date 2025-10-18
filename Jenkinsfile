@@ -1,4 +1,4 @@
-# deploy a helm chart to a kubernetes cluster
+
 pipeline {
     agent any
     environment {
