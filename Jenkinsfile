@@ -1,52 +1,74 @@
+# deploy a helm chart to a kubernetes cluster
 pipeline {
-    
-    tools {
-        maven 'Maven3'
-    }
     agent any
-    
     environment {
-        registry = "185439933271.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repo"
+        APP_NAME = "my-java-app"
+        IMAGE_NAME = "my-java-app"
+        IMAGE_TAG = "latest"
+        KUBE_CONTEXT = "minikube"
+        
     }
+
     stages {
-        stage('Git Checkout') {
+        stage('Checkout') {
+    steps {
+        git branch: 'main',
+            url: 'https://github.com/avkhaladkar1991/cicd-jenkins-docker-helm-kubernetes.git',
+            credentialsId: 'github-creds'
+    }
+}
+        stage('Build') {
             steps {
-               checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/deleonab/cicd-jenkins-docker-helm-kubernetes.git']])
-            }
-        }
-        stage('Build Artifact') {
-            steps {
-               sh 'mvn clean install'
-            }
-        }
-                stage('Unit Test') {
-            steps {
-               sh 'mvn test'
+                echo " Building Java application..."
+                sh 'mvn clean package -DskipTests'
             }
         }
         stage('Build Docker Image') {
             steps {
-               script{
-                   dockerImage = docker.build registry
-                   dockerImage.tag("$BUILD_NUMBER")
-               }
+                echo 'Build Docker Image...'
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                
             }
         }
-        stage('Push Docker Image') {
+
+        stage('Load into Minikube') {
             steps {
-               script{
-                   sh'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 185439933271.dkr.ecr.us-east-1.amazonaws.com'
-                   sh'docker push 185439933271.dkr.ecr.us-east-1.amazonaws.com/my-ecr-repo:$BUILD_NUMBER'
-               }
+                echo "📦 Loading image into Minikube..."
+                sh "minikube image load ${IMAGE_NAME}:${IMAGE_TAG}"
             }
         }
-        stage('Helm Deployment') {
+
+         stage('Helm Deploy') {
             steps {
-               script{
-                   sh"helm upgrade first --install mychart --namespace helm-deployment --set image.tag=$BUILD_NUMBER"
-                  
-               }
+                echo "🚀 Deploying application to Kubernetes using Helm..."
+                sh """
+                    helm upgrade --install ${APP_NAME} ./helm-chart \
+                      --set image.repository=${IMAGE_NAME} \
+                      --set image.tag=${IMAGE_TAG} \
+                      --set image.pullPolicy=IfNotPresent
+                """
             }
         }
-    } 
-}
+
+        stage('Verify Deployment') {
+            steps {
+                echo "🔍 Checking Kubernetes resources..."
+                sh 'kubectl get pods'
+                sh 'kubectl get svc'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Deployment succeeded!"
+            sh "minikube service ${APP_NAME} --url || true"
+        }
+        failure {
+            echo "❌ Pipeline failed. Check logs for details."
+        }
+    }
+}  
+        
+              
+    
