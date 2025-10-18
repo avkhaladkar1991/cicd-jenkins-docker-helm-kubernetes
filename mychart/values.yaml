@@ -1,12 +1,8 @@
-# Default values for mychart.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
 replicaCount: 1
 
 image:
-  repository: my-springboot-app       # Local Docker image name
-  tag: v1.0                           # Tag built by Jenkins/Docker
+  repository: my-springboot-app   # must match Docker image name
+  tag: v1.0                       # must match Docker image tag
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -14,49 +10,29 @@ nameOverride: ""
 fullnameOverride: ""
 
 serviceAccount:
-  # Specifies whether a service account should be created
   create: true
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use
   name: ""
 
 podAnnotations: {}
 
 podSecurityContext: {}
-  # fsGroup: 2000
 
 securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
 
 service:
-  type: LoadBalancer                  # Use LoadBalancer for minikube
-  port: 8080                          # Match the port your Java app listens on
+  type: LoadBalancer
+  port: 8080                     # must match container port
 
 resources: {}
-  # limits:
-  #   cpu: 500m
-  #   memory: 512Mi
-  # requests:
-  #   cpu: 250m
-  #   memory: 256Mi
 
 autoscaling:
   enabled: false
   minReplicas: 1
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
-
 tolerations: []
-
 affinity: {}
 
 ingress:
